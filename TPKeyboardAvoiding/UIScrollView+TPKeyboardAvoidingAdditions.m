@@ -12,8 +12,9 @@
 
 static const CGFloat kCalculatedContentPadding = 10;
 static const CGFloat kMinimumScrollOffsetPadding = 20;
-
 static const int kStateKey;
+
+NSString * const kDHStyleKey = @"kDHStyleKey";
 
 #define _UIKeyboardFrameEndUserInfoKey (&UIKeyboardFrameEndUserInfoKey != NULL ? UIKeyboardFrameEndUserInfoKey : @"UIKeyboardBoundsUserInfoKey")
 
@@ -42,13 +43,14 @@ static const int kStateKey;
     return state;
 }
 
-- (float) ManualPadding
+- (float) manualPadding
 {
-    return self.ManualPadding;
+    return [objc_getAssociatedObject(self, (__bridge const void *)(kDHStyleKey)) floatValue];
 }
 
-- (void)setManualPadding:(float)padding {
-    self.ManualPadding = padding;
+- (void)setManualPadding:(float)manualPadding {
+    objc_setAssociatedObject(self, (__bridge const void *)(kDHStyleKey), @(manualPadding), OBJC_ASSOCIATION_RETAIN);
+    //    self.manualPadding = manualPadding;
 }
 
 - (void)TPKeyboardAvoiding_keyboardWillShow:(NSNotification*)notification {
@@ -387,7 +389,6 @@ static const int kStateKey;
                 padding = kMinimumScrollOffsetPadding;
             }
             
-            padding += self.ManualPadding;
             // Ideal offset places the subview rectangle origin "padding" points from the top of the scrollview.
             // If there is a top contentInset, also compensate for this so that subviewRect will not be placed under
             // things like navigation bars.
@@ -399,15 +400,17 @@ static const int kStateKey;
         centerViewInViewableArea();
     }
     
+    offset += self.manualPadding;
+    
     // Constrain the new contentOffset so we can't scroll past the bottom. Note that we don't take the bottom
     // inset into account, as this is manipulated to make space for the keyboard.
-    CGFloat maxOffset = contentSize.height - viewAreaHeight - self.contentInset.top;
+    CGFloat maxOffset = contentSize.height - viewAreaHeight - self.contentInset.top + self.manualPadding;
     if (offset > maxOffset) {
         offset = maxOffset;
     }
     
     // Constrain the new contentOffset so we can't scroll past the top, taking contentInsets into account
-    if ( offset < -self.contentInset.top ) {
+    if ( offset < -self.contentInset.top + self.manualPadding) {
         offset = -self.contentInset.top;
     }
     

@@ -10,7 +10,7 @@
 
 @interface UIScrollView (TPKeyboardAvoidingAdditions)
 
-@property float ManualPadding;
+@property (nonatomic) float manualPadding;
 
 - (BOOL)TPKeyboardAvoiding_focusNextTextField;
 - (void)TPKeyboardAvoiding_scrollToActiveTextField;

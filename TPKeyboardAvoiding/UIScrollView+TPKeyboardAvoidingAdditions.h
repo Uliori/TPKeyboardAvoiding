@@ -12,8 +12,6 @@
 
 @property float ManualPadding;
 
-- (void)TPKeyboardAvoiding_SetManualPadding:(float)padding;
-
 - (BOOL)TPKeyboardAvoiding_focusNextTextField;
 - (void)TPKeyboardAvoiding_scrollToActiveTextField;
 

@@ -29,7 +29,6 @@ static const int kStateKey;
 @end
 
 @implementation UIScrollView (TPKeyboardAvoidingAdditions)
-@dynamic ManualPadding;
 
 - (TPKeyboardAvoidingState*)keyboardAvoidingState {
     TPKeyboardAvoidingState *state = objc_getAssociatedObject(self, &kStateKey);
@@ -43,7 +42,12 @@ static const int kStateKey;
     return state;
 }
 
-- (void)TPKeyboardAvoiding_SetManualPadding:(float)padding {
+- (float) ManualPadding
+{
+    return self.ManualPadding;
+}
+
+- (void)setManualPadding:(float)padding {
     self.ManualPadding = padding;
 }
 

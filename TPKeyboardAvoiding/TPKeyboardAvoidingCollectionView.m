@@ -16,6 +16,7 @@
 #pragma mark - Setup/Teardown
 
 - (void)setup {
+    self.ManualPadding = 0;
     if ( [self hasAutomaticKeyboardAvoidingBehaviour] ) return;
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(TPKeyboardAvoiding_keyboardWillShow:) name:UIKeyboardWillChangeFrameNotification object:nil];
@@ -50,7 +51,7 @@
 
 -(BOOL)hasAutomaticKeyboardAvoidingBehaviour {
     if ( [[[UIDevice currentDevice] systemVersion] integerValue] >= 9
-            && [self.delegate isKindOfClass:[UICollectionViewController class]] ) {
+        && [self.delegate isKindOfClass:[UICollectionViewController class]] ) {
         // Theory: It looks like iOS 9's collection views automatically avoid the keyboard. As usual
         // Apple have totally failed to document this anywhere, so this is just a guess.
         return YES;

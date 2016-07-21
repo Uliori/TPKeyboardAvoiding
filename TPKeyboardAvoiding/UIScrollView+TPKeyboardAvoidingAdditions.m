@@ -25,10 +25,11 @@ static const int kStateKey;
 @property (nonatomic, assign) CGSize       priorContentSize;
 @property (nonatomic, assign) BOOL         priorPagingEnabled;
 @property (nonatomic, assign) BOOL         ignoringNotifications;
-@property (nonatomic, assign) BOOL         keyboardAnimationInProgress;
+@property(nonatomic, assign) BOOL keyboardAnimationInProgress;
 @end
 
 @implementation UIScrollView (TPKeyboardAvoidingAdditions)
+@dynamic ManualPadding;
 
 - (TPKeyboardAvoidingState*)keyboardAvoidingState {
     TPKeyboardAvoidingState *state = objc_getAssociatedObject(self, &kStateKey);
@@ -42,33 +43,37 @@ static const int kStateKey;
     return state;
 }
 
-- (void)TPKeyboardAvoiding_keyboardWillShow:(NSNotification*)notification {
+- (void)TPKeyboardAvoiding_SetManualPadding:(float)padding {
+    self.ManualPadding = padding;
+}
 
+- (void)TPKeyboardAvoiding_keyboardWillShow:(NSNotification*)notification {
+    
     CGRect keyboardRect = [self convertRect:[[[notification userInfo] objectForKey:_UIKeyboardFrameEndUserInfoKey] CGRectValue] fromView:nil];
     if (CGRectIsEmpty(keyboardRect)) {
         return;
     }
-
+    
     TPKeyboardAvoidingState *state = self.keyboardAvoidingState;
-
+    
     if ( state.ignoringNotifications ) {
         return;
     }
-
+    
     state.keyboardRect = keyboardRect;
-
+    
     if ( !state.keyboardVisible ) {
         state.priorInset = self.contentInset;
         state.priorScrollIndicatorInsets = self.scrollIndicatorInsets;
         state.priorPagingEnabled = self.pagingEnabled;
     }
-
+    
     state.keyboardVisible = YES;
     self.pagingEnabled = NO;
-
+    
     if ( [self isKindOfClass:[TPKeyboardAvoidingScrollView class]] ) {
         state.priorContentSize = self.contentSize;
-
+        
         if ( CGSizeEqualToSize(self.contentSize, CGSizeZero) ) {
             // Set the content size, if it's not set. Do not set content size explicitly if auto-layout
             // is being used to manage subviews
@@ -152,7 +157,7 @@ static const int kStateKey;
     self.contentInset = state.priorInset;
     self.scrollIndicatorInsets = state.priorScrollIndicatorInsets;
     self.pagingEnabled = state.priorPagingEnabled;
-	[self layoutIfNeeded];
+    [self layoutIfNeeded];
     [UIView commitAnimations];
 }
 
@@ -166,7 +171,7 @@ static const int kStateKey;
 - (void)TPKeyboardAvoiding_updateFromContentSizeChange {
     TPKeyboardAvoidingState *state = self.keyboardAvoidingState;
     if ( state.keyboardVisible ) {
-		state.priorContentSize = self.contentSize;
+        state.priorContentSize = self.contentSize;
         self.contentInset = [self TPKeyboardAvoiding_contentInsetForKeyboard];
     }
 }
@@ -210,10 +215,10 @@ static const int kStateKey;
     CGFloat visibleSpace = self.bounds.size.height - self.contentInset.top - self.contentInset.bottom;
     
     CGPoint idealOffset
-        = CGPointMake(self.contentOffset.x,
-                      [self TPKeyboardAvoiding_idealOffsetForView:firstResponder
-                                            withViewingAreaHeight:visibleSpace]);
-
+    = CGPointMake(self.contentOffset.x,
+                  [self TPKeyboardAvoiding_idealOffsetForView:firstResponder
+                                        withViewingAreaHeight:visibleSpace]);
+    
     // Ordinarily we'd use -setContentOffset:animated:YES here, but it interferes with UIScrollView
     // behavior which automatically ensures that the first responder is within its bounds
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
@@ -256,9 +261,9 @@ static const int kStateKey;
             
             // Find views beneath, or to the right. For those views that match, choose the view closest to the top left
             if ( childView != priorView
-                    && ((fabs(CGRectGetMinY(frame) - CGRectGetMinY(priorFrame)) < FLT_EPSILON && CGRectGetMinX(frame) > CGRectGetMinX(priorFrame))
-                        || CGRectGetMinY(frame) > CGRectGetMinY(priorFrame))
-                    && (!*bestCandidate || heuristic > bestCandidateHeuristic) ) {
+                && ((fabs(CGRectGetMinY(frame) - CGRectGetMinY(priorFrame)) < FLT_EPSILON && CGRectGetMinX(frame) > CGRectGetMinX(priorFrame))
+                    || CGRectGetMinY(frame) > CGRectGetMinY(priorFrame))
+                && (!*bestCandidate || heuristic > bestCandidateHeuristic) ) {
                 
                 *bestCandidate = childView;
                 bestCandidateHeuristic = heuristic;
@@ -271,7 +276,7 @@ static const int kStateKey;
 
 - (CGFloat)TPKeyboardAvoiding_nextInputViewHeuristicForViewFrame:(CGRect)frame {
     return  (-frame.origin.y * 1000.0) // Prefer elements closest to top (most important)
-          + (-frame.origin.x);         // Prefer elements closest to left
+    + (-frame.origin.x);         // Prefer elements closest to left
 }
 
 - (BOOL)TPKeyboardAvoiding_viewHiddenOrUserInteractionNotEnabled:(UIView *)view {
@@ -340,44 +345,45 @@ static const int kStateKey;
 -(CGFloat)TPKeyboardAvoiding_idealOffsetForView:(UIView *)view withViewingAreaHeight:(CGFloat)viewAreaHeight {
     CGSize contentSize = self.contentSize;
     __block CGFloat offset = 0.0;
-
+    
     CGRect subviewRect = [view convertRect:view.bounds toView:self];
-
+    
     __block CGFloat padding = 0.0;
-
+    
     void(^centerViewInViewableArea)()  = ^ {
         // Attempt to center the subview in the visible space
         padding = (viewAreaHeight - subviewRect.size.height) / 2;
-
+        
         // But if that means there will be less than kMinimumScrollOffsetPadding
         // pixels above the view, then substitute kMinimumScrollOffsetPadding
         if (padding < kMinimumScrollOffsetPadding ) {
             padding = kMinimumScrollOffsetPadding;
         }
-
+        
         // Ideal offset places the subview rectangle origin "padding" points from the top of the scrollview.
         // If there is a top contentInset, also compensate for this so that subviewRect will not be placed under
         // things like navigation bars.
         offset = subviewRect.origin.y - padding - self.contentInset.top;
     };
-
+    
     // If possible, center the caret in the visible space. Otherwise, center the entire view in the visible space.
     if ([view conformsToProtocol:@protocol(UITextInput)]) {
         UIView <UITextInput> *textInput = (UIView <UITextInput>*)view;
         UITextPosition *caretPosition = [textInput selectedTextRange].start;
         if (caretPosition) {
             CGRect caretRect = [self convertRect:[textInput caretRectForPosition:caretPosition] fromView:textInput];
-
+            
             // Attempt to center the cursor in the visible space
             // pixels above the view, then substitute kMinimumScrollOffsetPadding
             padding = (viewAreaHeight - caretRect.size.height) / 2;
-
+            
             // But if that means there will be less than kMinimumScrollOffsetPadding
             // pixels above the view, then substitute kMinimumScrollOffsetPadding
             if (padding < kMinimumScrollOffsetPadding ) {
                 padding = kMinimumScrollOffsetPadding;
             }
-
+            
+            padding += self.ManualPadding;
             // Ideal offset places the subview rectangle origin "padding" points from the top of the scrollview.
             // If there is a top contentInset, also compensate for this so that subviewRect will not be placed under
             // things like navigation bars.
@@ -400,14 +406,14 @@ static const int kStateKey;
     if ( offset < -self.contentInset.top ) {
         offset = -self.contentInset.top;
     }
-
+    
     return offset;
 }
 
 - (void)TPKeyboardAvoiding_initializeView:(UIView*)view {
     if ( [view isKindOfClass:[UITextField class]]
-            && ((UITextField*)view).returnKeyType == UIReturnKeyDefault
-            && (![(UITextField*)view delegate] || [(UITextField*)view delegate] == (id<UITextFieldDelegate>)self) ) {
+        && ((UITextField*)view).returnKeyType == UIReturnKeyDefault
+        && (![(UITextField*)view delegate] || [(UITextField*)view delegate] == (id<UITextFieldDelegate>)self) ) {
         [(UITextField*)view setDelegate:(id<UITextFieldDelegate>)self];
         UIView *otherView = [self TPKeyboardAvoiding_findNextInputViewAfterView:view beneathView:self];
         

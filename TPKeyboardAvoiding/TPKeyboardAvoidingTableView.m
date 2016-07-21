@@ -16,6 +16,7 @@
 #pragma mark - Setup/Teardown
 
 - (void)setup {
+    self.ManualPadding = 0;
     if ( [self hasAutomaticKeyboardAvoidingBehaviour] ) return;
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(TPKeyboardAvoiding_keyboardWillShow:) name:UIKeyboardWillChangeFrameNotification object:nil];
@@ -54,7 +55,7 @@
         // by Apple, so results obtained only empirically.
         return YES;
     }
-
+    
     return NO;
 }
 
@@ -69,11 +70,11 @@
         [super setContentSize:contentSize];
         return;
     }
-	if (CGSizeEqualToSize(contentSize, self.contentSize)) {
-		// Prevent triggering contentSize when it's already the same
-		// this cause table view to scroll to top on contentInset changes
-		return;
-	}
+    if (CGSizeEqualToSize(contentSize, self.contentSize)) {
+        // Prevent triggering contentSize when it's already the same
+        // this cause table view to scroll to top on contentInset changes
+        return;
+    }
     [super setContentSize:contentSize];
     [self TPKeyboardAvoiding_updateContentInset];
 }
